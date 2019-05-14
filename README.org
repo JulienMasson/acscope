@@ -1,0 +1,64 @@
+#+TITLE:   Another Emacs Cscope Interface
+#+AUTHOR:  Julien Masson
+#+OPTIONS: \n:t
+
+*acscope* is "yet" another [[http://cscope.sourceforge.net/][cscope]] interface for [[https://www.gnu.org/software/emacs/][Emacs]].
+
+Here are the main key features:
+- Support all the cscope search type
+- *Multi database* management
+- Support search over [[https://www.gnu.org/software/tramp/][Tramp]]
+- *Tree* functions calling
+- Interactive buffer (toggle auto-update, keep-history ...)
+
+*** Emacs configuration:
+Add the following lines in your emacs config ([[https://www.gnu.org/software/emacs/manual/html_node/emacs/Init-File.html][emacs-init]]):
+#+begin_src elisp
+(require 'acscope)
+(acscope-global-setup)
+#+end_src
+
+*** Minor mode
+
+By default *acscope* minor mode is activated in these following modes:\\
+~c-mode~ ~c++-mode~ ~dired-mode~ ~python-mode~ ~acscope-buffer-mode~
+
+|---------+-----------------------------------------------|
+| Keys    | Commands                                      |
+|---------+-----------------------------------------------|
+| C-c s = | Find assignments to this symbol               |
+| C-c s a | Add cscope database                           |
+| C-c s c | Find functions calling this function          |
+| C-c s d | Find this function definition                 |
+| C-c s e | Find this egrep pattern                       |
+| C-c s f | Find this file                                |
+| C-c s p | Add pycscope database                         |
+| C-c s r | Reset cscope database list                    |
+| C-c s s | Find this C symbol                            |
+| C-c s t | Find this text string                         |
+| C-c s u | Pop back to where acscope was last invoked    |
+| C-c s D | Dired in one of the cscope database directory |
+| C-c s S | Find this struct definition                   |
+| C-c s T | Tree functions calling this function          |
+
+*** Major mode
+
+The major mode is activated only in the *acscope* buffer.
+|--------+----------------------------------|
+| Keys   | Commands                         |
+|--------+----------------------------------|
+| return | Goto current entry               |
+| c      | Cancel current acscope request   |
+| C      | Cancel all acscope requests      |
+| d      | Erase current request at point   |
+| f      | Toggle cscope fast-symbol        |
+| D      | Erase all contents in the buffer |
+| n      | Move to next file                |
+| p      | Move to previous file            |
+| q      | Quit acscope buffer              |
+| s      | Toggle acscope keep-history      |
+| t      | Set acscope tree depth max       |
+| u      | Toggle cscope auto-update        |
+| U      | Recreate all acscope databases   |
+| C-n    | Move to next request             |
+| C-p    | Move to previous request         |
