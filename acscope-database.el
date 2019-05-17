@@ -138,7 +138,7 @@ Otherwise we return nil"
 				  :desc desc))
 	 (request (make-acscope-request :dir dir :args args
 					:start 'acscope-buffer-init-header
-					:fail 'acscope-insert-request-fail
+					:fail 'acscope-buffer-insert-fail
 					:finish 'acscope-database-finish
 					:data data)))
     (unless (file-exists-p acscope-database-source-file)
