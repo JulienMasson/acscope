@@ -23,6 +23,7 @@
 
 ;;; Code:
 
+(require 'tramp)
 (require 'acscope-buffer)
 (require 'acscope-lib)
 (require 'acscope-request)
@@ -68,8 +69,16 @@
 (defun acscope-database--git-toplevel ()
   "Return the path of the toplevel git directory"
   (if-let* ((git-cmd "git rev-parse --show-toplevel")
-	    (output (shell-command-to-string git-cmd)))
-      (file-name-as-directory (replace-regexp-in-string "\n$" "" output))))
+	    (output (shell-command-to-string git-cmd))
+	    (local-path (file-name-as-directory
+			 (replace-regexp-in-string "\n$" "" output))))
+      (if (tramp-tramp-file-p default-directory)
+	  (let* ((dissect (tramp-dissect-file-name default-directory))
+		 (file-name (tramp-file-name-localname dissect))
+		 (remote (replace-regexp-in-string
+			  file-name "" default-directory)))
+	    (concat remote local-path))
+	local-path)))
 
 (defun acscope-database--find-cmd ()
   "Find command when creating cscope database"
