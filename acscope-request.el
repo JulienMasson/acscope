@@ -64,10 +64,24 @@
 
 ;;; Internal Functions
 
+(defun acscope-request--tramp-executable-find (dir program)
+  "Find program over tramp"
+  (with-parsed-tramp-file-name dir nil
+    (let ((buffer (tramp-get-connection-buffer v))
+	  (cmd (concat "which " program)))
+      (with-current-buffer buffer
+	(tramp-send-command v cmd)
+	(goto-char (point-min))
+	(when (looking-at "^\\(.*\\)")
+	  (match-string 1))))))
+
 (defun acscope-request--find-program (dir)
   "Find `acscope-request-program-name' executable"
   (let ((default-directory dir))
-    (executable-find acscope-request-program-name)))
+    (if (tramp-tramp-file-p dir)
+	(acscope-request--tramp-executable-find
+	 dir acscope-request-program-name)
+      (executable-find acscope-request-program-name))))
 
 (defun acscope-request--get-output ()
   "Return a list of data collected from current acscope request"
