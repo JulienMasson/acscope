@@ -23,6 +23,9 @@
 
 ;;; Code:
 
+(when (version<= "26.1" emacs-version)
+  (require 'acscope-compatibility))
+
 (require 'acscope-buffer)
 (require 'acscope-database)
 (require 'acscope-extras)
