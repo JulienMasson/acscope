@@ -142,7 +142,7 @@
     (cond ((not (file-exists-p dir))
 	   (acscope-request--raise-error
 	    request (concat dir " doesn't exist !")))
-	  ((string= "" program)
+	  ((or (null program) (string= "" program))
 	   (acscope-request--raise-error
 	    request (concat "Cannot find: " acscope-request-program-name)))
 	  ((or (not (listp args)) (cl-member nil args))
