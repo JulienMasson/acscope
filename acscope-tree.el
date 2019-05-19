@@ -70,7 +70,7 @@ until we reach `acscope-tree-depth-max'"
     (mapc (lambda (func)
 	    (let* ((beg (acscope-point-max))
 		   (file (cadr func))
-		   (line (caddr func))
+		   (line (cl-caddr func))
 		   (fmt-line "%-15s %s")
 		   (arrow "┗━▶ ")
 		   (length (+ (length arrow) (* depth 8)))
