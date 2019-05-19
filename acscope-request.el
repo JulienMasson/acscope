@@ -144,7 +144,7 @@
 	    request (concat dir " doesn't exist !")))
 	  ((string= "" program)
 	   (acscope-request--raise-error
-	    request (concat "Cannot find: " acscope-program-name)))
+	    request (concat "Cannot find: " acscope-request-program-name)))
 	  ((or (not (listp args)) (cl-member nil args))
 	   (acscope-request--raise-error
 	    request "Incorrect arguments format"))
