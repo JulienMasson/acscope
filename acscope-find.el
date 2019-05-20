@@ -159,6 +159,11 @@ The plist contain: func, line-nbr and line-str"
 	((string-match (format "typedef struct \\(.*\\) %s" pattern) line)
 	 (acscope-find-struct-definition (match-string 1 line)))))
 
+(defun acscope-find--declaration-filter (pattern file func line)
+  "Custom filter to return function declaration in header file"
+  (and (string-match-p ".*\\.h$" file)
+       (string-match-p "<global>" func)))
+
 ;;; External Functions
 
 (defun acscope-find-enter ()
@@ -244,6 +249,15 @@ The plist contain: func, line-nbr and line-str"
 		       (propertize pattern 'face 'bold)))
 	 (args `("-L" "-1" ,pattern))
 	 (filter 'acscope-find--struct-filter))
+    (acscope-find--command desc args pattern filter)))
+
+(defun acscope-find-global-declaration (pattern)
+  "Find this function declaration"
+  (interactive (list (acscope-prompt-for-symbol "Find global declaration")))
+  (let* ((desc (format "Finding global declaration: %s\n"
+		       (propertize pattern 'face 'bold)))
+	 (args `("-L" "-0" ,pattern))
+	 (filter 'acscope-find--declaration-filter))
     (acscope-find--command desc args pattern filter)))
 
 (provide 'acscope-find)

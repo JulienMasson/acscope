@@ -55,6 +55,7 @@
     (define-key map (kbd "C-c s d") 'acscope-find-global-definition)
     (define-key map (kbd "C-c s e") 'acscope-find-egrep)
     (define-key map (kbd "C-c s f") 'acscope-find-file)
+    (define-key map (kbd "C-c s g") 'acscope-find-global-declaration)
     (define-key map (kbd "C-c s p") 'acscope-python-database-add)
     (define-key map (kbd "C-c s r") 'acscope-database-reset)
     (define-key map (kbd "C-c s s") 'acscope-find-symbol)

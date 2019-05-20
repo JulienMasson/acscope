@@ -32,6 +32,7 @@ By default *acscope* minor mode is activated in these following modes:\\
 | C-c s d | Find this function definition                 |
 | C-c s e | Find this egrep pattern                       |
 | C-c s f | Find this file                                |
+| C-c s g | Find this function declaration                |
 | C-c s p | Add pycscope database                         |
 | C-c s r | Reset cscope database list                    |
 | C-c s s | Find this C symbol                            |
