@@ -61,23 +61,22 @@
     (next-line)
     (acscope-find-enter)))
 
-(defun acscope-find--parse-line (line regexp &optional pattern)
+(defun acscope-find--parse-line (line &optional filter pattern)
   "Parse line and return cons (file . plist)
 The plist contain: func, line-nbr and line-str"
-  (if (functionp regexp)
-      (funcall regexp line pattern)
-    (when (string-match regexp line)
-      (let ((file (substring line (match-beginning 1) (match-end 1)))
-	    (func (substring line (match-beginning 2) (match-end 2)))
-	    (line-nbr (substring line (match-beginning 3) (match-end 3)))
-	    (line-str (substring line (match-beginning 4) (match-end 4))))
+  (when (string-match acscope-find-default-regexp line)
+    (let ((file (substring line (match-beginning 1) (match-end 1)))
+	  (func (substring line (match-beginning 2) (match-end 2)))
+	  (line-nbr (substring line (match-beginning 3) (match-end 3)))
+	  (line-str (substring line (match-beginning 4) (match-end 4))))
+      (when (or (null filter) (funcall filter pattern file func line))
 	(cons file `((:func ,func :line-nbr ,line-nbr :line-str ,line-str)))))))
 
-(defun acscope-find--collect-results (output regexp &optional pattern)
+(defun acscope-find--collect-results (output &optional filter pattern)
   "Parse output and return a list of result"
   (let (results)
     (mapc (lambda (line)
-    	    (when-let ((result (acscope-find--parse-line line regexp pattern)))
+    	    (when-let ((result (acscope-find--parse-line line filter pattern)))
 	      (if-let ((data (assoc-default (car result) results)))
 	      	  (setcdr (assoc (car result) results)
 	      		  (add-to-list 'data (cadr result) t))
@@ -126,10 +125,10 @@ The plist contain: func, line-nbr and line-str"
 
 (defun acscope-find--finish (output error data)
   "Handler when the find request has been finished"
-  (let* ((regexp (acscope-data-regexp data))
+  (let* ((filter (acscope-data-filter data))
 	 (dir (acscope-data-dir data))
 	 (pattern (acscope-data-pattern data))
-	 (results (acscope-find--collect-results output regexp pattern)))
+	 (results (acscope-find--collect-results output filter pattern)))
     (if results
 	(acscope-find--insert-results dir pattern results)
       (acscope-buffer-insert " --- No matches were found ---\n\n"))
@@ -140,19 +139,25 @@ The plist contain: func, line-nbr and line-str"
 				   (- (acscope-get-time-seconds)
 				      (acscope-data-start data))))))
 
-(defun acscope-find--command (desc args pattern regexp)
+(defun acscope-find--command (desc args pattern &optional filter)
   "Run cscope find command"
   (acscope-buffer-check)
   (acscope-database-check)
   (acscope-marker-save)
   (let* ((args (append (acscope-find-args) args))
 	 (requests (acscope-create-multi-request
-		    desc args pattern regexp
+		    desc args pattern filter
 		    'acscope-buffer-init-header
 		    'acscope-buffer-insert-header
 		    'acscope-buffer-insert-fail
 		    'acscope-find--finish)))
     (mapc #'acscope-request-run requests)))
+
+(defun acscope-find--struct-filter (pattern file func line)
+  "Custom filter to return only struct definition"
+  (cond ((string-match-p (format "struct %s {" pattern) line))
+	((string-match (format "typedef struct \\(.*\\) %s" pattern) line)
+	 (acscope-find-struct-definition (match-string 1 line)))))
 
 ;;; External Functions
 
@@ -181,76 +186,56 @@ The plist contain: func, line-nbr and line-str"
   (interactive (list (acscope-prompt-for-symbol "Find symbol")))
   (let* ((desc (format "Finding symbol: %s\n"
 		       (propertize pattern 'face 'bold)))
-	 (args `("-L" "-0" ,pattern))
-	 (regexp acscope-find-default-regexp))
-    (acscope-find--command desc args pattern regexp)))
+	 (args `("-L" "-0" ,pattern)))
+    (acscope-find--command desc args pattern)))
 
 (defun acscope-find-global-definition (pattern)
   "Find this function definition"
   (interactive (list (acscope-prompt-for-symbol "Find global definition")))
   (let* ((desc (format "Finding global definition: %s\n"
 		       (propertize pattern 'face 'bold)))
-	 (args `("-L" "-1" ,pattern))
-	 (regexp acscope-find-default-regexp))
-    (acscope-find--command desc args pattern regexp)))
+	 (args `("-L" "-1" ,pattern)))
+    (acscope-find--command desc args pattern)))
 
 (defun acscope-find-function-calling (pattern)
   "Find functions calling this function"
   (interactive (list (acscope-prompt-for-symbol "Find function calling")))
   (let* ((desc (format "Finding function calling: %s\n"
 		       (propertize pattern 'face 'bold)))
-	 (args `("-L" "-3" ,pattern))
-	 (regexp acscope-find-default-regexp))
-    (acscope-find--command desc args pattern regexp)))
+	 (args `("-L" "-3" ,pattern)))
+    (acscope-find--command desc args pattern)))
 
 (defun acscope-find-text-string (pattern)
   "Find this text string"
   (interactive (list (acscope-prompt-for-symbol "Find text string")))
   (let* ((desc (format "Finding text string: %s\n"
 		       (propertize pattern 'face 'bold)))
-	 (args `("-L" "-4" ,pattern))
-	 (regexp acscope-find-default-regexp))
-    (acscope-find--command desc args pattern regexp)))
+	 (args `("-L" "-4" ,pattern)))
+    (acscope-find--command desc args pattern)))
 
 (defun acscope-find-egrep (pattern)
   "Find this egrep pattern"
   (interactive (list (acscope-prompt-for-symbol "Find text with egrep")))
   (let* ((desc (format "Finding text with egrep: %s\n"
 		       (propertize pattern 'face 'bold)))
-	 (args `("-L" "-6" ,pattern))
-	 (regexp acscope-find-default-regexp))
-    (acscope-find--command desc args pattern regexp)))
+	 (args `("-L" "-6" ,pattern)))
+    (acscope-find--command desc args pattern)))
 
 (defun acscope-find-file (pattern)
   "Find this file"
   (interactive (list (acscope-prompt-for-symbol "Find file")))
   (let* ((desc (format "Finding file: %s\n"
 		       (propertize pattern 'face 'bold)))
-	 (args `("-L" "-7" ,pattern))
-	 (regexp acscope-find-default-regexp))
-    (acscope-find--command desc args pattern regexp)))
+	 (args `("-L" "-7" ,pattern)))
+    (acscope-find--command desc args pattern)))
 
 (defun acscope-find-symbol-assignment (pattern)
   "Find assignments to this symbol"
   (interactive (list (acscope-prompt-for-symbol "Find symbol assignment")))
   (let* ((desc (format "Finding symbol assignment: %s\n"
 		       (propertize pattern 'face 'bold)))
-	 (args `("-L" "-9" ,pattern))
-	 (regexp acscope-find-default-regexp))
-    (acscope-find--command desc args pattern regexp)))
-
-(defun acscope-struct-regexp-func (line pattern)
-  "Custom regexp to return only struct definition"
-  (when (string-match acscope-find-default-regexp line)
-    (let ((file (substring line (match-beginning 1) (match-end 1)))
-	  (func (substring line (match-beginning 2) (match-end 2)))
-	  (line-nbr (substring line (match-beginning 3) (match-end 3)))
-	  (line-str (substring line (match-beginning 4) (match-end 4))))
-      (cond ((string-match-p (format "struct %s {" pattern) line)
-	     (cons file `((:func ,func :line-nbr ,line-nbr :line-str ,line-str))))
-	    ((string-match (format "typedef struct \\(.*\\) %s" pattern) line)
-	     (acscope-find-struct-definition (match-string 1 line))
-	     (cons file `((:func ,func :line-nbr ,line-nbr :line-str ,line-str))))))))
+	 (args `("-L" "-9" ,pattern)))
+    (acscope-find--command desc args pattern)))
 
 (defun acscope-find-struct-definition (pattern)
   "Find this struct definition"
@@ -258,7 +243,7 @@ The plist contain: func, line-nbr and line-str"
   (let* ((desc (format "Finding struct definition: %s\n"
 		       (propertize pattern 'face 'bold)))
 	 (args `("-L" "-1" ,pattern))
-	 (regexp 'acscope-struct-regexp-func))
-    (acscope-find--command desc args pattern regexp)))
+	 (filter 'acscope-find--struct-filter))
+    (acscope-find--command desc args pattern filter)))
 
 (provide 'acscope-find)

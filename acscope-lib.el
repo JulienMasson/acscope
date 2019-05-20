@@ -35,7 +35,7 @@
   (dir     nil :read-only t)
   (desc    nil :read-only t)
   (pattern nil :read-only t)
-  (regexp  nil :read-only t)
+  (filter  nil :read-only t)
   (start   nil :read-only nil))
 
 ;;; Faces
@@ -145,27 +145,27 @@
       (goto-char pos))))
 
 ;; request utils
-(defun acscope-create-request (dir desc args pattern regexp start fail finish)
+(defun acscope-create-request (dir desc args pattern filter start fail finish)
   "Create acscope request with `acscope-data' as data"
   (let ((data (make-acscope-data :dir dir
 				 :desc desc
 				 :pattern pattern
-				 :regexp regexp)))
+				 :filter filter)))
     (make-acscope-request :dir dir :args args
 			  :start start
 			  :fail fail
 			  :finish finish
 			  :data data)))
 
-(defun acscope-create-multi-request (desc args pattern regexp init next fail finish)
+(defun acscope-create-multi-request (desc args pattern filter init next fail finish)
   "Create multi request, NEED COMMENTS HERE !!!!"
   (let ((first-request (list (acscope-create-request
 			      (car acscope-database-list)
-			      desc args pattern regexp
+			      desc args pattern filter
 			      init fail finish)))
 	(next-requests (mapcar (lambda (dir)
 				 (acscope-create-request
-				  dir desc args pattern regexp
+				  dir desc args pattern filter
 				  next fail finish))
 			       (cdr acscope-database-list))))
     (append first-request next-requests)))

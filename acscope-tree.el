@@ -132,9 +132,8 @@ until we reach `acscope-tree-depth-max'"
 	(mapc (lambda (pattern)
 		(let* ((dir (acscope-data-dir data))
 		       (args (append (acscope-database-args) `("-L" "-3" ,pattern)))
-		       (regexp acscope-find-default-regexp)
 		       (requests (acscope-create-multi-request
-				  nil args pattern regexp
+				  nil args pattern nil
 				  'ignore
 				  'ignore
 				  'acscope-tree--fail
@@ -173,8 +172,7 @@ until we reach `acscope-tree-depth-max'"
 
 (defun acscope-tree--finish (output error data)
   "Handler when one tree request has been finished"
-  (let* ((regexp (acscope-data-regexp data))
-	 (results (acscope-find--collect-results output regexp)))
+  (let ((results (acscope-find--collect-results output)))
     (acscope-tree--handle-results results data)))
 
 (defun acscope-tree--insert-directory (data)
@@ -213,9 +211,8 @@ until we reach `acscope-tree-depth-max'"
 	 (desc (format "Tree function calling: %s\n"
 		       (propertize pattern 'face 'bold)))
 	 (args (append (acscope-find-args) `("-L" "-3" ,pattern)))
-	 (regexp acscope-find-default-regexp)
 	 (requests (acscope-create-multi-request
-		    desc args pattern regexp
+		    desc args pattern nil
 		    'acscope-tree--insert-initial
 		    'acscope-tree--insert-directory
 		    'acscope-buffer-insert-fail
