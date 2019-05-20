@@ -23,7 +23,7 @@
 
 ;;; Code:
 
-(when (version<= "26.1" emacs-version)
+(when (version<= emacs-version "26.1")
   (require 'acscope-compatibility))
 
 (require 'acscope-buffer)
