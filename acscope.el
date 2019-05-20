@@ -94,7 +94,8 @@
 (defun acscope-quit ()
   "Quit acscope"
   (interactive)
-  (kill-buffer acscope-buffer-name))
+  (with-current-buffer acscope-buffer-name
+    (kill-buffer-and-window)))
 
 (defun acscope-next-pattern (pattern)
   "Move point to next pattern"
