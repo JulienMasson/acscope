@@ -83,7 +83,9 @@
   (let* ((default-directory dir)
 	 (args (list "-f" (eval acscope-database--pycscope-cross-ref)
 		     "-D" "-R"))
-	 (desc "Creating database cscope with pycscope ...\n")
+	 (desc (concat "Creating database cscope with "
+		       (propertize "Pycscope" 'face 'warning)
+		       " ...\n"))
 	 (data (make-acscope-data :dir dir
 				  :desc desc))
 	 (request (make-acscope-request :program acscope-database-pycscope-program-name
