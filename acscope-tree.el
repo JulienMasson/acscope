@@ -54,6 +54,11 @@
 
 ;;; Internal Functions
 
+(defmacro acscope-tree--args (args)
+  `(lexical-let ((args args))
+     (lambda (dir)
+       (append (acscope-database-args dir) ,args))))
+
 (defun acscope-tree--insert-data (beg func file depth &optional line)
   "Recursive function, insert data in the buffer
 until we reach `acscope-tree-depth-max'"
@@ -131,9 +136,10 @@ until we reach `acscope-tree-depth-max'"
     (if acscope-tree--pattern-list
 	(mapc (lambda (pattern)
 		(let* ((dir (acscope-data-dir data))
-		       (args (append (acscope-database-args) `("-L" "-3" ,pattern)))
+		       (args `("-L" "-3" ,pattern))
+		       (get-args (acscope-tree--args args))
 		       (requests (acscope-create-multi-request
-				  nil args pattern nil
+				  nil get-args pattern nil
 				  'ignore
 				  'ignore
 				  'acscope-tree--fail
@@ -210,9 +216,10 @@ until we reach `acscope-tree-depth-max'"
   (let* ((dir (car acscope-database-list))
 	 (desc (format "Tree function calling: %s\n"
 		       (propertize pattern 'face 'bold)))
-	 (args (append (acscope-find-args) `("-L" "-3" ,pattern)))
+	 (args `("-L" "-3" ,pattern))
+	 (get-args (acscope-find-args args))
 	 (requests (acscope-create-multi-request
-		    desc args pattern nil
+		    desc get-args pattern nil
 		    'acscope-tree--insert-initial
 		    'acscope-tree--insert-directory
 		    'acscope-buffer-insert-fail

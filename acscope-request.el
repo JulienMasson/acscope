@@ -32,19 +32,15 @@
   :group 'tools)
 
 (cl-defstruct acscope-request
-  (dir    nil     :read-only t)
-  (args   nil     :read-only t)
-  (start  'ignore :read-only t)
-  (fail   'ignore :read-only t)
-  (finish 'ignore :read-only t)
-  (data   nil     :read-only nil))
+  (program nil     :read-only t)
+  (dir     nil     :read-only t)
+  (args    nil     :read-only t)
+  (start   'ignore :read-only t)
+  (fail    'ignore :read-only t)
+  (finish  'ignore :read-only t)
+  (data    nil     :read-only nil))
 
 ;;; Customization
-
-(defcustom acscope-request-program-name "cscope"
-  "Cscope program name"
-  :type 'string
-  :group 'acscope-request)
 
 (defcustom acscope-request-buffer-name "*acscope-process*"
   "Cscope Request buffer name"
@@ -64,24 +60,23 @@
 
 ;;; Internal Functions
 
-(defun acscope-request--tramp-executable-find (dir program)
-  "Find program over tramp"
+(defun acscope-request--tramp-executable-find (dir program-name)
+  "Find PROGRAM-NAME over tramp in DIR"
   (with-parsed-tramp-file-name dir nil
     (let ((buffer (tramp-get-connection-buffer v))
-	  (cmd (concat "which " program)))
+	  (cmd (concat "which " program-name)))
       (with-current-buffer buffer
 	(tramp-send-command v cmd)
 	(goto-char (point-min))
 	(when (looking-at "^\\(.*\\)")
 	  (match-string 1))))))
 
-(defun acscope-request--find-program (dir)
-  "Find `acscope-request-program-name' executable"
+(defun acscope-request--find-program (dir program-name)
+  "Find PROGRAM-NAME executable in DIR"
   (let ((default-directory dir))
     (if (tramp-tramp-file-p dir)
-	(acscope-request--tramp-executable-find
-	 dir acscope-request-program-name)
-      (executable-find acscope-request-program-name))))
+	(acscope-request--tramp-executable-find dir program-name)
+      (executable-find program-name))))
 
 (defun acscope-request--get-output ()
   "Return a list of data collected from current acscope request"
@@ -131,20 +126,29 @@
     (acscope-request--funcall func nil status data)
     (acscope-request--process-next)))
 
+(defun acscope-request--get-args (request)
+  "Get arguments from the request"
+  (let ((args (acscope-request-args request))
+	(dir (acscope-request-dir request)))
+    (if (functionp args)
+	(funcall args dir)
+      args)))
+
 (defun acscope-request--exec (request)
   "Execute the acscope request"
   (setq acscope-request--current request)
   (acscope-request--funcall (acscope-request-start request)
 			   (acscope-request-data request))
   (let* ((dir (acscope-request-dir request))
-	 (program (acscope-request--find-program dir))
-	 (args (acscope-request-args request)))
+	 (program-name (acscope-request-program request))
+	 (program (acscope-request--find-program dir program-name))
+	 (args (acscope-request--get-args request)))
     (cond ((not (file-exists-p dir))
 	   (acscope-request--raise-error
 	    request (concat dir " doesn't exist !")))
 	  ((or (null program) (string= "" program))
 	   (acscope-request--raise-error
-	    request (concat "Cannot find: " acscope-request-program-name)))
+	    request (concat "Cannot find: " program-name)))
 	  ((or (not (listp args)) (cl-member nil args))
 	   (acscope-request--raise-error
 	    request "Incorrect arguments format"))

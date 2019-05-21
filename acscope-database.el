@@ -34,24 +34,14 @@
 
 ;;; Customization
 
-(defcustom acscope-database-file "cscope.out"
-  "Default cscope database file name"
-  :type 'string
-  :group 'acscope-database)
-
-(defcustom acscope-database-source-file "cscope.files"
-  "Default cscope source file name"
-  :type 'string
-  :group 'acscope-database)
-
 (defcustom acscope-database-fast-symbol nil
   "If non nil, enable fast symbol lookup"
   :type 'boolean
   :group 'acscope-database)
 
-(defcustom acscope-database-source-file-cmd 'acscope-database-default-source-file-cmd
-  "Function used to generate cscope source file"
-  :type 'function
+(defcustom acscope-database-default-sym "default"
+  "Default symbol use when managing acscope database"
+  :type 'string
   :group 'acscope-database)
 
 ;; External vars
@@ -61,8 +51,22 @@
 
 ;;; Internal vars
 
-(defconst acscope-database--fast-symbol-files '("cscope.out.in" "cscope.out.po")
-  "Cscope Fast symbol files")
+(defconst acscope-database--prefix "cscope-"
+  "Prefix use to make a matching between cscope files name and acscope symbols")
+
+(defconst acscope-database--default-cross-ref (concat acscope-database--prefix
+						      "default.out")
+  "Default cscope cross-reference database file name")
+
+(defconst acscope-database--default-source-file (concat acscope-database--prefix
+						      "default.files")
+  "Default cscope source file name")
+
+(defconst acscope-database--default-fast-symbol `(,(concat acscope-database--prefix
+							  "default.out.in")
+						  ,(concat acscope-database--prefix
+							  "default.out.po"))
+  "Default cscope Fast symbol files name")
 
 ;;; Internal Functions
 
@@ -80,19 +84,81 @@
 	    (concat remote local-path))
 	local-path)))
 
-(defun acscope-database--find-cmd ()
-  "Find command when creating cscope database"
-  (concat "find . -name \"*.[chxsS]\" > " acscope-database-source-file))
+(defun acscope-database--autodetect-sym (dir)
+  "Autodetect the acscope symbol at DIR"
+  (let* ((match (concat acscope-database--prefix "\\(.*\\)\.out$"))
+	 (file (car (directory-files dir nil match))))
+    (when (and file (string-match match file))
+      (match-string 1 file))))
 
-(defun acscope-database--check-fast-symbol (dir)
+(defun acscope-database--call (sym &rest arg)
+  "Call the specific database function for SYM with ARG"
+  (let ((fun (intern-soft (concat "acscope-database--" sym))))
+    (if (functionp fun)
+	(apply fun arg)
+      (message "Function %s not found" fun))))
+
+;; Default
+(defun acscope-database--default-find-cmd ()
+  "Default find command when creating cscope database"
+  (concat "find . -name \"*.[chxsS]\" > " acscope-database--default-source-file))
+
+(defun acscope-database--default-source-file-cmd (dir)
+  "Default cscope database source file command"
+  (let ((default-directory dir)
+	(inhibit-message t))
+    (shell-command (acscope-database--default-find-cmd))))
+
+(defun acscope-database--default-args ()
+  "Default cscope arguments following database options"
+  (append (list "-k" "-i" acscope-database--default-source-file
+		"-f" acscope-database--default-cross-ref)
+	  (if acscope-database-fast-symbol '("-q"))))
+
+(defun acscope-database--default-check-fast-symbol (dir)
   "Return t if the database respect `acscope-database-fast-symbol',
 Otherwise we return nil"
   (let ((fast-symbol-files (mapcar (lambda (file)
 				     (concat dir file))
-				   acscope-database--fast-symbol-files)))
+				   acscope-database--default-fast-symbol)))
     (if acscope-database-fast-symbol
 	(cl-find-if #'file-exists-p fast-symbol-files)
       (cl-find-if-not #'file-exists-p fast-symbol-files))))
+
+(defun acscope-database--default-cleanup (dir)
+  "Default cscope database cleanup"
+  (mapc (lambda (file)
+	  (let ((default-directory dir))
+	    (if (file-exists-p file)
+		(delete-file file))))
+	(append acscope-database--default-fast-symbol
+		(list acscope-database--default-cross-ref
+		      acscope-database--default-source-file))))
+
+(defun acscope-database--default-check (dir)
+  "Default cscope database check"
+  (let ((default-directory dir))
+    (if (file-exists-p acscope-database--default-cross-ref)
+	(unless (acscope-database--default-check-fast-symbol dir)
+	  (acscope-database-create "default" dir)))))
+
+(defun acscope-database--default-create-request (dir)
+  "Create default cscope database request"
+  (let* ((default-directory dir)
+	 (args (append (acscope-database--default-args) '("-b")))
+	 (desc (concat "Creating "
+		       (if acscope-database-fast-symbol
+			   (propertize "Fast Symbol " 'face 'bold))
+		       "cscope database ...\n"))
+	 (data (make-acscope-data :dir dir
+				  :desc desc))
+	 (request (make-acscope-request :program acscope-default-program-name
+					:dir dir :args args
+					:start 'acscope-buffer-init-header
+					:fail 'acscope-buffer-insert-fail
+					:finish 'acscope-database-finish
+					:data data)))
+    request))
 
 ;;; External Functions
 
@@ -103,76 +169,62 @@ Otherwise we return nil"
 				 (- (acscope-get-time-seconds)
 				    (acscope-data-start data)))))
 
-(defun acscope-database-args ()
-  "Return default cscope arguments following database options"
-  (append (list "-k" "-i" acscope-database-source-file
-		"-f" acscope-database-file)
-	  (if acscope-database-fast-symbol '("-q"))))
-
-(defun acscope-database-default-source-file-cmd (dir)
-  "Default cscope database source file command"
-  (let ((default-directory dir)
-	(inhibit-message t))
-    (shell-command (acscope-database--find-cmd))))
-
-(defun acscope-database-remove-files (dir)
-  "Remove cscope database files"
-  (mapc (lambda (file)
-	  (let ((default-directory dir))
-	    (if (file-exists-p file)
-		(delete-file file))))
-	(append acscope-database--fast-symbol-files
-		(list acscope-database-file acscope-database-source-file))))
-
-(defun acscope-database-create (dir)
+(defun acscope-database-create (sym dir)
   "Create cscope database"
   (acscope-buffer-check)
-  (acscope-database-remove-files dir)
-  (let* ((default-directory dir)
-	 (args (append (acscope-database-args) '("-b")))
-	 (desc (concat "Creating "
-		       (if acscope-database-fast-symbol
-			   (propertize "Fast Symbol " 'face 'bold))
-		       "cscope database ...\n"))
-	 (data (make-acscope-data :dir dir
-				  :desc desc))
-	 (request (make-acscope-request :dir dir :args args
-					:start 'acscope-buffer-init-header
-					:fail 'acscope-buffer-insert-fail
-					:finish 'acscope-database-finish
-					:data data)))
-    (unless (file-exists-p acscope-database-source-file)
-      (funcall acscope-database-source-file-cmd dir))
-    (acscope-request-run request)))
+  (let* ((cleanup (concat sym "-cleanup"))
+	 (create-request (concat sym "-create-request"))
+	 (request (acscope-database--call create-request dir))
+	 (source-file-cmd (concat sym "-source-file-cmd")))
+    (acscope-database--call cleanup dir)
+    (acscope-database--call source-file-cmd dir)
+    (when request
+      (acscope-request-run request))))
 
-(defun acscope-database-add (dir)
-  "Add cscope database"
-  (interactive "DAdd cscope database: ")
-  (if (and (file-exists-p (concat dir acscope-database-file))
-	   (acscope-database--check-fast-symbol dir))
-      (add-to-list 'acscope-database-list dir t)
-    (acscope-database-create dir)))
+(defun acscope-database-recreate ()
+  "Recreate all databases `acscope-database-list'"
+  (interactive)
+  (acscope-database-check-files)
+  (mapc (lambda (dir)
+	  (if-let ((sym (acscope-database--autodetect-sym dir)))
+	    (acscope-database-create sym dir)))
+	  acscope-database-list))
 
 (defun acscope-database-reset ()
   "Reset cscope database list `acscope-database-list'"
   (interactive)
   (setq acscope-database-list nil))
 
+(defun acscope-database-args (dir)
+  "Return cscope arguments for DIR directory"
+  (if-let* ((sym (acscope-database--autodetect-sym dir))
+	    (args (concat sym "-args")))
+      (acscope-database--call args)))
+
+(defun acscope-database-check-files ()
+  "Check cscope files for all database in `acscope-database-list'"
+  (mapc (lambda (dir)
+	  (let* ((sym (acscope-database--autodetect-sym dir))
+		 (check (concat sym "-check")))
+	    (if sym
+		(acscope-database--call check dir)
+	      (acscope-database-create acscope-database-default-sym dir))))
+	acscope-database-list))
+
 (defun acscope-database-check ()
   "Check database environment"
   (unless acscope-database-list
     (if-let ((git-repo (acscope-database--git-toplevel)))
 	(add-to-list 'acscope-database-list git-repo t)
-      (call-interactively 'acscope-database-add)))
-  (mapc (lambda (dir)
-	  (let ((database-file (concat dir acscope-database-file))
-		(fmt "Database (%s) doesn't exist, create it ? "))
-	    (if (file-exists-p database-file)
-		(unless (acscope-database--check-fast-symbol dir)
-		  (acscope-database-create dir))
-	      (if (yes-or-no-p (format fmt database-file))
-		  (acscope-database-create dir)
-		(acscope-abort)))))
-	acscope-database-list))
+      (call-interactively 'acscope-database-add-default)))
+  (acscope-database-check-files))
+
+(defun acscope-database-add-default (dir)
+  "Add default cscope database"
+  (interactive "DAdd cscope database: ")
+  (if (and (file-exists-p (concat dir acscope-database--default-cross-ref))
+	   (acscope-database--default-check-fast-symbol dir))
+      (add-to-list 'acscope-database-list dir t)
+    (acscope-database-create "default" dir)))
 
 (provide 'acscope-database)

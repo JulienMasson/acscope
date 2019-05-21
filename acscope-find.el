@@ -144,9 +144,9 @@ The plist contain: func, line-nbr and line-str"
   (acscope-buffer-check)
   (acscope-database-check)
   (acscope-marker-save)
-  (let* ((args (append (acscope-find-args) args))
+  (let* ((get-args (acscope-find-args args))
 	 (requests (acscope-create-multi-request
-		    desc args pattern filter
+		    desc get-args pattern filter
 		    'acscope-buffer-init-header
 		    'acscope-buffer-insert-header
 		    'acscope-buffer-insert-fail
@@ -166,6 +166,12 @@ The plist contain: func, line-nbr and line-str"
 
 ;;; External Functions
 
+(defmacro acscope-find-args (args)
+  `(lexical-let ((args args))
+     (lambda (dir)
+       (append (acscope-database-args dir) ,args
+	       (unless acscope-find-auto-update '("-d"))))))
+
 (defun acscope-find-enter ()
   "Goto current entry with the properties found at point"
   (interactive)
@@ -180,11 +186,6 @@ The plist contain: func, line-nbr and line-str"
 	  (end-of-line)
 	  (search-backward pattern nil t)))
       (acscope-marker-save))))
-
-(defun acscope-find-args ()
-  "Return default find arguments"
-  (append (acscope-database-args)
-	  (unless acscope-find-auto-update '("-d"))))
 
 (defun acscope-find-symbol (pattern)
   "Find this C symbol"

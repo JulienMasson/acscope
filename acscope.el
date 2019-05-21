@@ -28,8 +28,9 @@
 
 (require 'acscope-buffer)
 (require 'acscope-database)
-(require 'acscope-extras)
+(require 'acscope-dired)
 (require 'acscope-find)
+(require 'acscope-pycscope)
 (require 'acscope-tree)
 
 (defgroup acscope nil
@@ -50,13 +51,13 @@
 (defvar acscope-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "C-c s =") 'acscope-find-symbol-assignment)
-    (define-key map (kbd "C-c s a") 'acscope-database-add)
+    (define-key map (kbd "C-c s a") 'acscope-database-add-default)
     (define-key map (kbd "C-c s c") 'acscope-find-function-calling)
     (define-key map (kbd "C-c s d") 'acscope-find-global-definition)
     (define-key map (kbd "C-c s e") 'acscope-find-egrep)
     (define-key map (kbd "C-c s f") 'acscope-find-file)
     (define-key map (kbd "C-c s g") 'acscope-find-global-declaration)
-    (define-key map (kbd "C-c s p") 'acscope-python-database-add)
+    (define-key map (kbd "C-c s p") 'acscope-database-add-pycscope)
     (define-key map (kbd "C-c s r") 'acscope-database-reset)
     (define-key map (kbd "C-c s s") 'acscope-find-symbol)
     (define-key map (kbd "C-c s t") 'acscope-find-text-string)
@@ -87,7 +88,7 @@
   (define-key acscope-buffer-mode-map "s" 'acscope-toggle-keep-history)
   (define-key acscope-buffer-mode-map "t" 'acscope-tree-set-depth-max)
   (define-key acscope-buffer-mode-map "u" 'acscope-toggle-auto-update)
-  (define-key acscope-buffer-mode-map "U" 'acscope-recreate-database)
+  (define-key acscope-buffer-mode-map "U" 'acscope-database-recreate)
   (define-key acscope-buffer-mode-map (kbd "C-n") 'acscope-next-request)
   (define-key acscope-buffer-mode-map (kbd "C-p") 'acscope-previous-request))
 
@@ -160,7 +161,7 @@
   "Toggle cscope fast-symbol"
   (interactive)
   (setq acscope-database-fast-symbol (not acscope-database-fast-symbol))
-  (mapc #'acscope-database-create acscope-database-list)
+  (acscope-database-check-files)
   (acscope-buffer-update-header-line))
 
 (defun acscope-toggle-keep-history ()
@@ -191,11 +192,6 @@
 	      (cons "[keep-history]: %s" (lambda () (acscope-toggle-header-line
 						     acscope-buffer-keep-history)))
 	      (cons "[Tree depth-max]: %s" 'acscope-tree-propertize-depth-max))))
-
-(defun acscope-recreate-database ()
-  "Recreate all databases `acscope-database-list'"
-  (interactive)
-  (mapc #'acscope-database-create acscope-database-list))
 
 ;;; global setup
 

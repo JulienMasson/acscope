@@ -67,6 +67,11 @@
 
 ;;; Customization
 
+(defcustom acscope-default-program-name "cscope"
+  "Cscope program name"
+  :type 'string
+  :group 'acscope)
+
 (defcustom acscope-marker-ring-max 32
   "Length of the ring containing acscope mark `acscope--marker-ring'"
   :type 'number
@@ -81,10 +86,6 @@
 (defvar acscope-prompt--history nil)
 
 ;;; External Functions
-
-(defun acscope-abort ()
-  "abort current execution"
-  (signal 'quit t))
 
 (defun acscope-bold-string (str pattern)
   "Bold the string pattern in str"
@@ -145,27 +146,28 @@
       (goto-char pos))))
 
 ;; request utils
-(defun acscope-create-request (dir desc args pattern filter start fail finish)
+(defun acscope-create-request (dir desc get-args pattern filter start fail finish)
   "Create acscope request with `acscope-data' as data"
   (let ((data (make-acscope-data :dir dir
 				 :desc desc
 				 :pattern pattern
 				 :filter filter)))
-    (make-acscope-request :dir dir :args args
+    (make-acscope-request :program acscope-default-program-name
+			  :dir dir :args get-args
 			  :start start
 			  :fail fail
 			  :finish finish
 			  :data data)))
 
-(defun acscope-create-multi-request (desc args pattern filter init next fail finish)
+(defun acscope-create-multi-request (desc get-args pattern filter init next fail finish)
   "Create multi request, NEED COMMENTS HERE !!!!"
   (let ((first-request (list (acscope-create-request
 			      (car acscope-database-list)
-			      desc args pattern filter
+			      desc get-args pattern filter
 			      init fail finish)))
 	(next-requests (mapcar (lambda (dir)
 				 (acscope-create-request
-				  dir desc args pattern filter
+				  dir desc get-args pattern filter
 				  next fail finish))
 			       (cdr acscope-database-list))))
     (append first-request next-requests)))
