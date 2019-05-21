@@ -87,9 +87,14 @@
 (defun acscope-database--autodetect-sym (dir)
   "Autodetect the acscope symbol at DIR"
   (let* ((match (concat acscope-database--prefix "\\(.*\\)\.out$"))
-	 (file (car (directory-files dir nil match))))
-    (when (and file (string-match match file))
-      (match-string 1 file))))
+	 (files (directory-files dir nil match))
+	 (syms (mapcar (lambda (file)
+			 (when (string-match match file)
+			   (match-string 1 file)))
+		       files)))
+    (cond ((null syms) syms)
+	  ((= (length syms) 1) (car syms))
+	  (t (completing-read "Multi database detected, choose one: " syms)))))
 
 (defun acscope-database--call (sym &rest arg)
   "Call the specific database function for SYM with ARG"
