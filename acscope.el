@@ -154,29 +154,35 @@
 (defun acscope-toggle-auto-update ()
   "Toggle cscope auto-update"
   (interactive)
-  (setq acscope-find-auto-update (not acscope-find-auto-update))
-  (acscope-buffer-update-header-line))
+  (setq acscope-find-auto-update (not acscope-find-auto-update)))
 
 (defun acscope-toggle-fast-symbol ()
   "Toggle cscope fast-symbol"
   (interactive)
   (setq acscope-database-fast-symbol (not acscope-database-fast-symbol))
-  (acscope-database-check-files)
-  (acscope-buffer-update-header-line))
+  (acscope-database-check-files))
 
 (defun acscope-toggle-keep-history ()
   "Toggle cscope keep-history"
   (interactive)
   (setq acscope-buffer-keep-history (not acscope-buffer-keep-history))
   (unless acscope-buffer-keep-history
-    (acscope-buffer-erase-all))
-  (acscope-buffer-update-header-line))
+    (acscope-buffer-erase-all)))
 
 (defun acscope-tree-set-depth-max (depth)
   "Set cscope tree depth max"
   (interactive "nTree depth max: ")
-  (setq acscope-tree-depth-max depth)
+  (setq acscope-tree-depth-max depth))
+
+(defun acscope-header-watcher (symbol newval op where)
+  (set symbol newval)
   (acscope-buffer-update-header-line))
+
+(defun acscope-header-watcher-init ()
+  (add-variable-watcher 'acscope-find-auto-update #'acscope-header-watcher)
+  (add-variable-watcher 'acscope-database-fast-symbol #'acscope-header-watcher)
+  (add-variable-watcher 'acscope-buffer-keep-history #'acscope-header-watcher)
+  (add-variable-watcher 'acscope-tree-depth-max #'acscope-header-watcher))
 
 (defun acscope-tree-propertize-depth-max ()
   "Return a propertize string of `acscope-tree-depth-max'"
@@ -200,6 +206,7 @@
   (interactive)
   (acscope-setup-major-mode)
   (acscope-setup-header-line)
+  (acscope-header-watcher-init)
   (mapc (lambda (hook)
 	  (add-hook hook #'acscope-mode))
 	acscope-mode-hook-list))
