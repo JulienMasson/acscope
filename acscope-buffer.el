@@ -67,7 +67,8 @@ Please look at `acscope-buffer-header-line-alist' to know what is displayed"
     (let ((str (mapcar (lambda (elem)
 			 (format (car elem) (funcall (cdr elem))))
 		       acscope-buffer-header-line-alist)))
-    (setq header-line-format (mapconcat 'identity str "  ")))))
+      (setq header-line-format (mapconcat 'identity str "  "))
+      (force-mode-line-update))))
 
 (defun acscope-point-max ()
   "Return point max of `acscope-buffer-name' buffer"
