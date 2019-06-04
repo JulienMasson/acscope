@@ -68,7 +68,7 @@
       (with-current-buffer buffer
 	(tramp-send-command v cmd)
 	(goto-char (point-min))
-	(when (looking-at "^\\(.*\\)")
+	(when (looking-at "^\\(.+\\)")
 	  (match-string 1))))))
 
 (defun acscope-request--find-program (dir program-name)
@@ -146,7 +146,7 @@
     (cond ((not (file-exists-p dir))
 	   (acscope-request--raise-error
 	    request (concat dir " doesn't exist !")))
-	  ((or (null program) (string= "" program))
+	  ((null program)
 	   (acscope-request--raise-error
 	    request (concat "Cannot find: " program-name)))
 	  ((or (not (listp args)) (cl-member nil args))
