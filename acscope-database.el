@@ -44,6 +44,12 @@
   :type 'string
   :group 'acscope-database)
 
+(defcustom acscope-database-default-files
+  (list "c" "cpp" "h" "s" "S")
+  "List of file extension to include in acscope database"
+  :type 'list
+  :group 'acscope-database)
+
 ;; External vars
 
 (defvar acscope-database-list nil
@@ -106,7 +112,9 @@
 ;; Default
 (defun acscope-database--default-find-cmd ()
   "Default find command when creating cscope database"
-  (concat "find . -name \"*.[chxsS]\" > " acscope-database--default-source-file))
+  (format "find . -regex \".*\\.\\(%s\\)\" > %s"
+	  (mapconcat 'identity acscope-database-default-files "\\|")
+	  acscope-database--default-source-file))
 
 (defun acscope-database--default-source-file-cmd (dir)
   "Default cscope database source file command"
