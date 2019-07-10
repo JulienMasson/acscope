@@ -45,7 +45,7 @@
   :group 'acscope-database)
 
 (defcustom acscope-database-default-files
-  (list "c" "cpp" "h" "s" "S")
+  (list "c" "cc" "cpp" "h" "s" "S")
   "List of file extension to include in acscope database"
   :type 'list
   :group 'acscope-database)
