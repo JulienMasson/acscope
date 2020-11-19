@@ -50,6 +50,11 @@
   :type 'list
   :group 'acscope-database)
 
+(defcustom acscope-database-exclude-path nil
+  "List of path to not include in database"
+  :type 'list
+  :group 'acscope-database)
+
 ;; External vars
 
 (defvar acscope-database-list nil
@@ -112,8 +117,13 @@
 ;; Default
 (defun acscope-database--default-find-cmd ()
   "Default find command when creating cscope database"
-  (format "find . -regex \".*\\.\\(%s\\)\" > %s"
-	  (mapconcat 'identity acscope-database-default-files "\\|")
+  (format "find . -regex \".*\\.\\(%s\\)\" %s > %s"
+	  (string-join acscope-database-default-files "\\|")
+	  (if acscope-database-exclude-path
+	      (string-join (mapcar (lambda (exclude)
+				     (format " -not -path \"\\./%s/\*\" " exclude))
+				   acscope-database-exclude-path))
+	    "")
 	  acscope-database--default-source-file))
 
 (defun acscope-database--default-source-file-cmd (dir)
