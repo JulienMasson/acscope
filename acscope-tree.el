@@ -101,7 +101,7 @@ until we reach `acscope-tree-depth-max'"
   "Insert failure message and insert current results collected"
   (acscope-buffer-insert (concat (propertize "ERROR: " 'face 'error)
 				 error "\n"
-				 (mapconcat 'identity output "\n")))
+				 (string-join output "\n")))
   (acscope-tree--insert data))
 
 (defun acscope-tree--next-search (data)

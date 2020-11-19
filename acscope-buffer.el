@@ -67,7 +67,7 @@ Please look at `acscope-buffer-header-line-alist' to know what is displayed"
     (let ((str (mapcar (lambda (elem)
 			 (format (car elem) (funcall (cdr elem))))
 		       acscope-buffer-header-line-alist)))
-      (setq header-line-format (mapconcat 'identity str "  "))
+      (setq header-line-format (string-join str "  "))
       (force-mode-line-update))))
 
 (defun acscope-point-max ()
@@ -126,7 +126,7 @@ if `acscope-buffer-keep-history' is set to t"
   "Insert failure message in `acscope-buffer-name' buffer"
   (acscope-buffer-insert (concat (propertize "ERROR: " 'face 'error)
 				 error "\n"
-				 (mapconcat 'identity output "\n") "\n")))
+				 (string-join output "\n") "\n")))
 
 
 (provide 'acscope-buffer)
