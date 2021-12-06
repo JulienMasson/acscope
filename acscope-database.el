@@ -121,7 +121,7 @@
 	  (string-join acscope-database-default-files "\\|")
 	  (if acscope-database-exclude-path
 	      (string-join (mapcar (lambda (exclude)
-				     (format " -not -path \"\\./%s/\*\" " exclude))
+				     (format " -not -path \"\\./\*%s/\*\" " exclude))
 				   acscope-database-exclude-path))
 	    "")
 	  acscope-database--default-source-file))
