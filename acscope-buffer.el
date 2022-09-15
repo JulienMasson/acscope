@@ -32,7 +32,7 @@
 (define-derived-mode acscope-buffer-mode fundamental-mode
   "acscope buffer"
   (acscope-buffer-update-header-line)
-  (toggle-read-only t))
+  (setq buffer-read-only t))
 
 ;;; Customization
 
